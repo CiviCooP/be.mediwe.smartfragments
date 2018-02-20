@@ -10,9 +10,9 @@ use CRM_Smartfragments_ExtensionUtil as E;
  * @see http://wiki.civicrm.org/confluence/display/CRMDOC/API+Architecture+Standards
  */
 function _civicrm_api3_text_fragment_Get_spec(&$spec) {
-  $spec['reference'] = array (
-    'name' => 'reference',
-    'title' => 'Referentie',
+  $spec['application'] = array (
+    'name' => 'application',
+    'title' => 'Toepassing waarbinnen de tekstfragmenten gebruikt worden',
     'api.required' => 1,
     'description' => 'Code waarmee de tekst gevonden kan worden',
     'type' => CRM_Utils_Type::T_STRING,

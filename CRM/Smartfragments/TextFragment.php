@@ -20,59 +20,37 @@ class CRM_Smartfragments_TextFragment {
       throw new CiviCRM_API3_Exception("Language {$params['language']} not found");
     }
 
-    /* hier begint het drupal gedeelte */
-
-    if (isset($params['contact_id'])) {
-      /* bestaat er een contact id dan wordt hier eerst mee gezocht */
-
-      $sql = "SELECT b.entity_id id
-     ,      b.body_value fragment
-     ,      ref.field_reference_value reference
-     ,      l.field_language_value language
-     FROM   field_data_field_reference ref
-     JOIN   field_data_body b ON (b.entity_id = ref.entity_id AND b.entity_type='node')
-     JOIN   field_data_field_language l ON (l.entity_id = ref.entity_id AND l.entity_type='node')
-     JOIN   field_data_field_civi_contact c ON (c.entity_id = ref.entity_id AND c.entity_type='node')
-     WHERE  field_reference_value  = :reference AND field_language_value = :language AND field_civi_contact_contact_id = :contact_id";
-
-      $args = [
-        ':reference' => $params['reference'],
-        ':language' => $params['language'],
-        ':contact_id' => $params['contact_id'],
-      ];
-
-      $result = db_query($sql, $args);
-
-      /* is er resultaat dan wordt dit teruggegeven, en is de
-         de functie klaar */
-      if (($result->rowCount()) > 0) {
-        return [
-          'textfragment' => $result->fetchField(1),
-        ];
-
-      };
-      /* zonder resultaat word de procedure voor zoeken zonder contact id gevolgt*/
-    }
 
     $sql = "SELECT b.entity_id id
-     ,      b.body_value fragment
-     ,      ref.field_reference_value reference
-     ,      l.field_language_value language
-     FROM   field_data_field_reference ref
-     JOIN   field_data_body b ON (b.entity_id = ref.entity_id AND b.entity_type='node')
-     JOIN   field_data_field_language l ON (l.entity_id = ref.entity_id AND l.entity_type='node')
-     WHERE  field_reference_value  = :reference AND field_language_value = :language 
-     AND    NOT exists (SELECT 1 FROM field_data_field_civi_contact c WHERE c.entity_id=l.entity_id)";
-     /* bovenstaande not exists zorgt ervoor dat een klantspecifieke tekst niet uit een algemene search
-        komt */
-    $args = [
-      ':reference' => $params['reference'],
-      ':language' => $params['language'],
-    ];
+    ,      b.body_value fragment
+    ,      ref.field_reference_value reference
+    ,      l.field_language_value language
+    ,      t.name
+    ,      c.field_civi_contact_contact_id contact_id
+    FROM   field_data_field_reference ref
+    JOIN   field_data_body b ON (b.entity_id = ref.entity_id and b.entity_type='node')
+    JOIN   field_data_field_language l ON (l.entity_id = ref.entity_id and l.entity_type='node')
+    JOIN   field_data_field_application a ON (a.entity_id = ref.entity_id and a.entity_type='node')
+    JOIN   taxonomy_term_data t ON (a.field_application_tid = t.tid  )
+    JOIN   taxonomy_vocabulary v ON (v.vid = t.vid and v.machine_name='application')
+    LEFT JOIN   field_data_field_civi_contact c ON (c.entity_id = ref.entity_id and c.entity_type='node')";
 
-    return [
-      'textfragment' => db_query($sql, $args)->fetchField(1),
-    ];
+    $where = 'where l.field_language_value = :language and t.name = :application';
+
+    $args[':language'] = $params['language'];
+    $args[':application'] =$params['application'];
+
+    if(isset($params['contact_id'])){
+      $args[':contact_id'] = $params['contact_id'];
+      $where .= ' and c.field_civi_contact_contact_id = :contact_id';
+    }
+
+    $rset = db_query($sql.' '.$where,$args);
+
+    $row = $rset->fetchAssoc();
+
+
+    return $row;
 
   }
 
