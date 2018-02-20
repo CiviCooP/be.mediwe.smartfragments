@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/smartfragments/tester</path>
+    <page_callback>CRM_Smartfragments_Page_Tester</page_callback>
+    <title>Tester</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
