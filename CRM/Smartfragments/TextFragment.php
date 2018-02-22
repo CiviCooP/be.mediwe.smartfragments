@@ -16,6 +16,8 @@ class CRM_Smartfragments_TextFragment {
 
   public function get($params) {
 
+    $result = [];
+
     if (!in_array($params['language'], $this->languages())) {
       throw new CiviCRM_API3_Exception("Language {$params['language']} not found");
     }
@@ -42,16 +44,38 @@ class CRM_Smartfragments_TextFragment {
 
     if(isset($params['contact_id'])){
       $args[':contact_id'] = $params['contact_id'];
-      $where .= ' and c.field_civi_contact_contact_id = :contact_id';
+      $where .= ' and (c.field_civi_contact_contact_id = :contact_id or c.field_civi_contact_contact_id is null)';
     }
 
-    $rset = db_query($sql.' '.$where,$args);
+    $dao = db_query($sql.' '.$where,$args);
+    while($row = $dao->fetchAssoc()){
+      $reference = $row['reference'];
+        if(isset($row['contact_id'])&&isset($params['contact_id'])){
+          $result[$reference]=$row['fragment'];
+        } elseif (isset($row['contact_id'])&&!isset($params['contact_id'])) {
 
-    $row = $rset->fetchAssoc();
-
-
-    return $row;
+        } elseif(!isset($row['contact_id'])&&isset($params['contact_id'])&&!isset($result[$reference])){
+          $result[$reference]=$row['fragment'];
+        } elseif(!isset($row['contact_id'])&&!isset($params['contact_id'])){
+          $result[$reference]=$row['fragment'];
+        }
+    }
+    return $result;
 
   }
+
+  public static function  listApplications(){
+
+    $sql = "select term.name from taxonomy_term_data term
+            join taxonomy_vocabulary voc on (voc.vid = term.vid)
+            where voc.machine_name='application'";
+    $dao = db_query($sql);
+    while($row = $dao->fetchAssoc()){
+      $result[]=$row['name'];
+    }
+    return $result;
+  }
+
+
 
 }
